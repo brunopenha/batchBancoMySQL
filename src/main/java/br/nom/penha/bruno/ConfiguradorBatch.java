@@ -8,22 +8,21 @@ import org.springframework.batch.core.configuration.annotation.EnableBatchProces
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
-import org.springframework.batch.core.repository.JobRepository;
-import org.springframework.batch.core.repository.support.MapJobRepositoryFactoryBean;
+import org.springframework.batch.item.database.BeanPropertyItemSqlParameterSourceProvider;
+import org.springframework.batch.item.database.JdbcBatchItemWriter;
 import org.springframework.batch.item.database.JdbcCursorItemReader;
 import org.springframework.batch.item.file.FlatFileItemWriter;
 import org.springframework.batch.item.file.transform.BeanWrapperFieldExtractor;
 import org.springframework.batch.item.file.transform.DelimitedLineAggregator;
-import org.springframework.batch.support.transaction.ResourcelessTransactionManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
-import org.springframework.transaction.PlatformTransactionManager;
 
 import br.nom.penha.bruno.entidades.Cliente;
 import br.nom.penha.bruno.mapeadores.MapeiaRegistroCliente;
+import br.nom.penha.bruno.negocio.AjustaSenhaParameterSourceProvider;
 import br.nom.penha.bruno.processadores.ProcessadorItemCliente;
 
 @Configuration 
@@ -43,9 +42,9 @@ public class ConfiguradorBatch {
 	public DataSource origemDadoUSUARIOps() {
 		final DriverManagerDataSource banco = new DriverManagerDataSource();
 		banco.setDriverClassName("com.mysql.jdbc.Driver");
-		banco.setUrl("jdbc:mysql://localhost:3306/<BANCO>");
-		banco.setUsername("<USUARIO>");
-		banco.setPassword("<SENHA>");
+//		banco.setUrl("jdbc:mysql://localhost:3306/<BANCO>");
+//		banco.setUsername("<USUARIO>");
+//		banco.setPassword("<SENHA>");
 		
 		return banco;
 	}
@@ -65,7 +64,7 @@ public class ConfiguradorBatch {
 	}
 	
 	@Bean
-	public FlatFileItemWriter<Cliente> escritor(){
+	public FlatFileItemWriter<Cliente> escritorDeArquivo(){
 		FlatFileItemWriter<Cliente> escritor = new FlatFileItemWriter<Cliente>();
 		
 		escritor.setResource(new ClassPathResource("cliente.csv"));
@@ -81,14 +80,25 @@ public class ConfiguradorBatch {
 		});
 		
 		return escritor;
-	} 
+	}
+	
+	@Bean
+	public JdbcBatchItemWriter<Cliente> escritorDeBanco(){
+		JdbcBatchItemWriter<Cliente> escritor = new JdbcBatchItemWriter<Cliente>();
+		escritor.setItemSqlParameterSourceProvider(new AjustaSenhaParameterSourceProvider());
+		escritor.setSql("UPDATE clientes SET senha=:senha WHERE id=:id");
+		escritor.setDataSource(origemDados);
+		
+		
+		return escritor;
+	}
 	
 	@Bean
 	public Step passo1() {
 		return fabricaMontadorPassos.get("passo1")
 				.<Cliente,Cliente> chunk(10)
 				.reader(leitor())
-				.writer(escritor())
+				.writer(escritorDeBanco())
 				.build();
 	}
 		
@@ -102,13 +112,5 @@ public class ConfiguradorBatch {
 				.build();
 	}
 	
-	@Bean
-	public PlatformTransactionManager getTransactionManager() {
-	    return new ResourcelessTransactionManager();
-	}
-
-	@Bean
-	public JobRepository getJobRepo() throws Exception {
-	    return new MapJobRepositoryFactoryBean(getTransactionManager()).getObject();
-	}
+	
 }

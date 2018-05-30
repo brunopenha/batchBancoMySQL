@@ -99,9 +99,17 @@ public ProcessadorItemCliente processador() {
 }
 ```
 
-.<a name="8">8</a> - Aqui deve ser implementado o tratamento para escrever no banco...
+.<a name="8">8</a> - Na classe criada no item [4](#4), inclua o método `escritorParaBanco()` que retorne o tipo `JdbcBatchItemWriter<Cliente>`, sendo que ele deve ter a anotação `@Bean`
 
-.<a name="9>9</a> - Na classe criado no item [4](#4), inclua o método `passo1()` que retorno o tipo `Step`, de forma que ele utilize o atributo criado em [5.3](#5.3), fazendo com que ele tenha um _chunk_ de 10, use como _reader_ o metodo criado em [5.6](#5.6), como _processor_ o método criado [7](#7), como _writer_ o metodo criado em [8](#8) e ao final, chamando o método _build_. Esse método tem que ser anotado com `@Bean`, ficando assim:
+8.1 - Nesse método crie um objeto do tipo `JdbcBatchItemWriter<Cliente>`, atribuindo a ele uma nova instância
+
+8.2 - Com o objeto instanciado, atribua ao `ItemSqlParameterSourceProvider` uma nova instância de `BeanPropertyItemSqlParameterSourceProvider<Cliente>`
+
+8.3 - Nesse objeto, atribua em _sql_ a instrução `"UPDATE clientes SET senha=:senha WHERE id=:id"`
+
+8.4 - E finalmente,  objeto, atribua o _dataSource_ o objeto criado em [5.4](#5.4)
+
+<a name="9>9</a> - Na classe criada no item [4](#4), inclua o método `passo1()` que retorno o tipo `Step`, de forma que ele utilize o atributo criado em [5.3](#5.3), fazendo com que ele tenha um _chunk_ de 10, use como _reader_ o metodo criado em [5.6](#5.6), como _processor_ o método criado [7](#7), como _writer_ o metodo criado em [8](#8) e ao final, chamando o método _build_. Esse método tem que ser anotado com `@Bean`, ficando assim:
 
 ```java
 @Bean
@@ -142,6 +150,3 @@ Caused by: org.springframework.jdbc.BadSqlGrammarException: PreparedStatementCal
 ```
 
 Abra a biblioteca `spring-batch-core-XX.jar` e dentro do pacote `org.springframework.batch.core` existem os scripts para a criação dessas tabelas no banco utilizado
-
----
-Abra a classe 
